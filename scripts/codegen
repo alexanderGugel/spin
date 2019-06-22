@@ -1,0 +1,50 @@
+#!/usr/bin/env node
+
+"use strict";
+
+const spinners = require("./spinners.json");
+const fs = require("fs");
+const path = require("path");
+
+const specsFile = path.resolve(__filename, "../../src/Spin/Specs.hs");
+
+const entries = Object.entries(spinners);
+
+const lines = [
+  "-- | This module contains specs for a number of default spinning indicators.",
+  "-- This file has been auto-generated using scripts/codegen. The specs",
+  "-- themselves have been copied from github.com/sindresorhus/cli-spinners.",
+  "module Spin.Specs",
+  ...(entries.length > 0
+    ? [
+        `  ( ${entries[0][0]}Spec`,
+        ...entries.slice(1).map(([name]) => `  , ${name}Spec`)
+      ]
+    : ["  ("]),
+  "  ) where",
+  "",
+  "import Spin.Types",
+  "",
+  ...entries.flatMap(([name, { interval, frames }]) => [
+    `-- | Spec for ${name} spinning indicator:`,
+    ...frames.map(frame => `-- ${frame}`),
+    `${name}Spec :: Spec`,
+    `${name}Spec = Spec`,
+    `  { specName = ${JSON.stringify(name)}`,
+    `  , specInterval = ${String(interval)}`,
+    ...(frames.length > 0
+      ? [
+          "  , specFrames =",
+          `    [ ${JSON.stringify(frames[0])}`,
+          ...frames
+            .slice(1)
+            .map((frame, i) => `    , ${JSON.stringify(frame)}`),
+          "    ]"
+        ]
+      : ["  , specFrames = []"]),
+    "  }",
+    ""
+  ])
+];
+
+fs.writeFileSync(specsFile, lines.join("\n"));
